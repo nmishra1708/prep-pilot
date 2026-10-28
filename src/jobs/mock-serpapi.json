@@ -1,0 +1,72 @@
+{
+  "search_metadata": {
+    "status": "Success",
+    "searches_used": 17
+  },
+  "jobs_results": [
+    {
+      "job_id": "mock-node-react-indore",
+      "title": "Senior Full Stack Engineer (Node.js, React)",
+      "company_name": "Acme Product Labs",
+      "location": "Indore, Madhya Pradesh, India",
+      "via": "via Company careers",
+      "detected_extensions": {
+        "posted_at": "Posted 2 days ago",
+        "schedule_type": "Full-time",
+        "work_from_home": true,
+        "salary": "₹18L–₹28L a year"
+      },
+      "description": "We are looking for a product engineer with 5+ years of experience building reliable Node.js and React applications. Qualifications: React, Node.js, MongoDB, API design, automated testing. Responsibilities include owning full-stack features, mentoring engineers, and improving service reliability. Benefits include flexible remote work and learning allowance.",
+      "job_highlights": [
+        { "title": "Qualifications", "items": ["5+ years of experience", "Node.js and React", "MongoDB and API design"] },
+        { "title": "Responsibilities", "items": ["Own product features", "Mentor engineers"] },
+        { "title": "Benefits", "items": ["Remote-friendly", "Learning allowance"] }
+      ],
+      "apply_options": [
+        { "title": "Company site", "link": "https://example.com/careers/full-stack-engineer" },
+        { "title": "LinkedIn", "link": "https://www.linkedin.com/jobs/view/example" }
+      ]
+    },
+    {
+      "job_id": "mock-node-lead-indore",
+      "title": "Node.js Platform Lead",
+      "company_name": "Indore Cloud Systems",
+      "location": "Indore, India",
+      "via": "via Google Jobs",
+      "detected_extensions": {
+        "posted_at": "Posted 1 day ago",
+        "schedule_type": "Contract",
+        "work_from_home": false
+      },
+      "description": "Lead backend platform engineering. Looking for a minimum of 7 years experience with Node.js, distributed systems, and mentoring. Own API reliability and coordinate delivery with product teams.",
+      "job_highlights": [
+        { "title": "Qualifications", "items": ["Minimum 7 years experience", "Node.js and distributed systems"] },
+        { "title": "Responsibilities", "items": ["Lead platform engineering", "Own API reliability"] }
+      ],
+      "apply_options": [
+        { "title": "Employer site", "link": "https://example.com/careers/platform-lead" }
+      ]
+    },
+    {
+      "job_id": "mock-fullstack-remote",
+      "title": "Full Stack Developer",
+      "company_name": "Northstar Digital",
+      "location": "Remote",
+      "via": "via Google Jobs",
+      "detected_extensions": {
+        "posted_at": "Posted 6 hours ago",
+        "schedule_type": "Full-time",
+        "work_from_home": true,
+        "salary": "₹12L–₹20L a year"
+      },
+      "description": "Join a distributed team building React and Node.js services. Experience with MongoDB and cloud deployments is helpful. We welcome candidates with varied backgrounds.",
+      "job_highlights": [
+        { "title": "Qualifications", "items": ["React and Node.js", "MongoDB"] },
+        { "title": "Benefits", "items": ["Remote work", "Flexible schedule"] }
+      ],
+      "apply_options": [
+        { "title": "Company site", "link": "https://example.com/jobs/full-stack-developer" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "interviews": [
+    {
+      "companyName": "Northstar Labs",
+      "profile": "Senior Node.js Developer",
+      "rounds": [
+        { "roundName": "HR screen", "mode": "video", "dateTime": "2026-11-02T10:00:00+05:30", "duration": 30, "status": "Scheduled", "notes": "Initial conversation" },
+        { "roundName": "Technical 1", "mode": "video", "dateTime": "2026-11-04T14:00:00+05:30", "duration": 60, "status": "Scheduled", "notes": "" }
+      ],
+      "status": "Scheduled",
+      "hr": { "name": "Asha Mehta", "email": "asha@example.com", "phone": "+91 98765 43210", "linkedInUrl": "https://www.linkedin.com/" },
+      "jobLink": "https://example.com/jobs/node-developer",
+      "linkedApplicationId": "",
+      "questions": [{ "questionText": "How do you diagnose event-loop lag?", "round": "Technical 1", "topic": "Node.js", "myAnswer": "I would inspect event-loop delay metrics and profile blocking work.", "howItWent": "Good", "correctAnswer": "", "studyItemId": "" }],
+      "overallNotes": "Sample interview record.",
+      "feedbackReceived": "",
+      "offerDetails": { "ctc": "", "joiningDate": "" }
+    },
+    {
+      "companyName": "Acme Product Labs",
+      "profile": "Full Stack Engineer",
+      "rounds": [{ "roundName": "System design", "mode": "video", "dateTime": "2026-10-25T13:30:00+05:30", "duration": 60, "status": "Completed", "notes": "" }],
+      "status": "Awaiting result",
+      "hr": { "name": "", "email": "", "phone": "", "linkedInUrl": "" },
+      "jobLink": "",
+      "linkedApplicationId": "",
+      "questions": [{ "questionText": "Design a resilient API.", "round": "System design", "topic": "System Design", "myAnswer": "", "howItWent": "Average", "correctAnswer": "", "studyItemId": "" }],
+      "overallNotes": "",
+      "feedbackReceived": "",
+      "offerDetails": { "ctc": "", "joiningDate": "" }
+    },
+    {
+      "companyName": "CloudWorks",
+      "profile": "AI/LLM Engineer",
+      "rounds": [],
+      "status": "Selected",
+      "hr": { "name": "", "email": "", "phone": "", "linkedInUrl": "" },
+      "jobLink": "",
+      "linkedApplicationId": "",
+      "questions": [],
+      "overallNotes": "",
+      "feedbackReceived": "",
+      "offerDetails": { "ctc": "₹28 LPA", "joiningDate": "2026-12-01" }
+    }
+  ],
+  "studyItems": [
+    { "topic": "Node.js", "question": "What is event-loop lag and how do you investigate it?", "answer": "Measure event-loop delay, profile CPU-heavy callbacks, and inspect synchronous work. Keep blocking computation off the event loop.", "tags": ["performance", "runtime"], "difficulty": "Medium", "source": "company interview", "confidence": 3, "bookmarked": true, "sourceCompanies": ["Northstar Labs"] },
+    { "topic": "Node.js", "question": "How does stream backpressure work?", "answer": "Backpressure lets a writable signal that its internal buffer is full. Pause or await writes until the consumer is ready.", "tags": ["streams"], "difficulty": "Medium", "source": "own", "confidence": 2, "bookmarked": false, "sourceCompanies": [] },
+    { "topic": "React", "question": "When would you use memoization in React?", "answer": "Profile first. Use memoization when stable references avoid measurable repeated work; remove it if it adds complexity without benefit.", "tags": ["performance"], "difficulty": "Easy", "source": "book", "confidence": 4, "bookmarked": false, "sourceCompanies": [] },
+    { "topic": "MongoDB", "question": "How do compound indexes affect query performance?", "answer": "Compound indexes support queries using their leading fields. Choose field order based on equality, sort, and range predicates, then verify with explain.", "tags": ["indexing", "database"], "difficulty": "Medium", "source": "own", "confidence": 3, "bookmarked": false, "sourceCompanies": [] },
+    { "topic": "AWS", "question": "How would you design a highly available service on AWS?", "answer": "Distribute stateless compute across availability zones, use managed replicated data services, health checks, and tested recovery procedures.", "tags": ["availability", "cloud"], "difficulty": "Hard", "source": "book", "confidence": 2, "bookmarked": true, "sourceCompanies": [] },
+    { "topic": "System Design", "question": "How do you handle idempotency in a payment API?", "answer": "Accept an idempotency key, persist the request outcome atomically, and return the recorded result for safe retries.", "tags": ["api", "reliability"], "difficulty": "Hard", "source": "company interview", "confidence": 3, "bookmarked": false, "sourceCompanies": ["Acme Product Labs"] },
+    { "topic": "LLM/RAG", "question": "How do you evaluate retrieval quality in a RAG system?", "answer": "Create a representative labelled set. Measure retrieval relevance separately from grounded answer quality, then monitor latency and cost.", "tags": ["evaluation", "retrieval"], "difficulty": "Hard", "source": "own", "confidence": 2, "bookmarked": true, "sourceCompanies": [] },
+    { "topic": "HR", "question": "How do you explain a career transition?", "answer": "Connect the transition to transferable strengths, a deliberate learning plan, and a specific reason the role fits.", "tags": ["communication"], "difficulty": "Easy", "source": "company interview", "confidence": 3, "bookmarked": false, "sourceCompanies": ["CloudWorks"] },
+    { "topic": "System Design", "question": "Explain a simple asynchronous order workflow.", "answer": "Use an outbox to atomically store the order and event, publish with retries, and make consumers idempotent.", "diagram": { "type": "mermaid", "content": "flowchart LR\n  Client --> API\n  API --> DB[(Orders + Outbox)]\n  DB --> Worker\n  Worker --> Queue\n  Queue --> Consumer" }, "tags": ["events", "outbox"], "difficulty": "Hard", "source": "own", "confidence": 2, "bookmarked": true, "sourceCompanies": [] },
+    { "topic": "React", "question": "What accessibility details matter for a modal dialog?", "answer": "Move focus into the dialog, keep keyboard focus inside, support Escape where appropriate, label it, and restore focus when it closes.", "tags": ["accessibility", "ui"], "difficulty": "Medium", "source": "book", "confidence": 4, "bookmarked": false, "sourceCompanies": [] }
+  ]
+}

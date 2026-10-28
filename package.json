@@ -1,0 +1,53 @@
+{
+  "name": "live-dictation",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "server": "node server/index.mjs",
+    "migrate:legacy": "node server/auth/claim-legacy-data.mjs",
+    "build": "tsc -b && vite build",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^6.0.2",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dompurify": "^3.2.6",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0",
+    "highlight.js": "^11.11.1",
+    "jsonwebtoken": "^9.0.3",
+    "marked": "^15.0.7",
+    "mermaid": "^12.2.0",
+    "multer": "^2.0.2",
+    "nodemailer": "^10.2.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.91.0",
+    "react-router-dom": "^7.18.5",
+    "sanitize-html": "^2.17.0",
+    "sql.js": "^1.13.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@types/cors": "^2.8.19",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^2.0.0",
+    "@types/nodemailer": "^8.0.2",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/sanitize-html": "^2.16.0",
+    "@types/sql.js": "^1.4.9",
+    "@vitejs/plugin-react": "^6.1.2",
+    "jsdom": "^25.0.1",
+    "typescript": "~5.6.2",
+    "vite": "^8.3.5",
+    "vitest": "^4.1.12"
+  }
+}
