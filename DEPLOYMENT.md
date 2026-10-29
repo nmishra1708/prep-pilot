@@ -32,7 +32,7 @@ In the Vercel dashboard or via the CLI:
 - Build Command: `npm run vercel-build`
 - Output Directory: `dist`
 - Install Command: `npm install`
-- Node.js Version: `20.x`
+- Node.js Version: `24.x`
 
 ## 3. Environment variables
 
