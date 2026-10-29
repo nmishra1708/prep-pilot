@@ -1,21 +1,28 @@
 # Say it. See it.
 
-A responsive React + TypeScript app with live dictation and an opt-in mock video interview. The interview mode asks role-specific questions, records each response as its own local video/audio clip, captions speech, and creates a transparent practice report.
+A responsive React + TypeScript app with live dictation, mock interview analysis, job search, study tracking, and secure user accounts.
 
 ## Run locally
 
 ```sh
 npm install
+cp .env.example .env
+npm run server
 npm run dev
 ```
 
-Open the localhost URL printed by Vite. Interview mode also needs the backend in a second terminal:
+Open the localhost URL printed by Vite. The Vite dev server proxies `/api` requests to `http://localhost:8787`. Use HTTPS or localhost and allow camera and microphone access. Production frontend builds use `npm run build`; tests use `npm test`.
 
-```sh
-npm run server
-```
+## Vercel deployment
 
-The Vite development server proxies `/api` requests to `http://localhost:8787`. Use HTTPS or localhost and allow camera and microphone access. Production frontend builds use `npm run build`; tests use `npm test`.
+This project is prepared for a single-repository Vercel deployment with:
+
+- a Vite frontend built to `dist`
+- a serverless API exported from `/api/index.ts`
+- `vercel.json` with SPA rewrites and security headers
+- a CI workflow for tests and build checks
+
+Follow the instructions in [DEPLOYMENT.md](./DEPLOYMENT.md).
 
 ## Job Search & Application Tracker
 

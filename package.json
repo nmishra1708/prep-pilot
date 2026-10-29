@@ -4,11 +4,16 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host 0.0.0.0",
     "server": "node server/index.mjs",
     "migrate:legacy": "node server/auth/claim-legacy-data.mjs",
     "build": "tsc -b && vite build",
+    "start": "vite --host 0.0.0.0 preview",
+    "vercel-build": "npm run build",
     "test": "vitest run"
+  },
+  "engines": {
+    "node": "20.x"
   },
   "dependencies": {
     "@hookform/resolvers": "^6.0.2",
