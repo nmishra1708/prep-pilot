@@ -19,7 +19,7 @@ const isLocalServer = !process.env.VERCEL && process.env.NODE_ENV !== "productio
 const serverDirectory = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDirectory = path.join(serverDirectory, "uploads");
 
-const db = process.env.NODE_ENV === "development" || process.env.DATABASE_URL
+const db = process.env.NODE_ENV === "production" || process.env.DATABASE_URL
   ? await createPrismaDatabase()
   : await createDatabase();
 
