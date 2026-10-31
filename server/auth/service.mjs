@@ -140,21 +140,26 @@ export function createAuthService({ db, mailer, env = process.env, uploadsDirect
   const requireAuth = async (req, res, next) => {
     const token = req.authCookies?.access ?? cookie(req, "access_token");
     if (!token) return res.status(401).json({ error: "Authentication required." });
+    let payload;
     try {
-      const payload = jwt.verify(token, accessSecret(env), { issuer: "say-it-see-it", algorithms: ["HS256"] });
-      if (typeof payload !== "object" || typeof payload.sub !== "string" || typeof payload.sid !== "string") {
-        return res.status(401).json({ error: "Authentication required." });
-      }
-      const session = db.authSession(payload.sid);
+      payload = jwt.verify(token, accessSecret(env), { issuer: "say-it-see-it", algorithms: ["HS256"] });
+    } catch {
+      return res.status(401).json({ error: "Authentication required." });
+    }
+    if (typeof payload !== "object" || typeof payload.sub !== "string" || typeof payload.sid !== "string") {
+      return res.status(401).json({ error: "Authentication required." });
+    }
+    try {
+      const session = await db.authSession(payload.sid);
       if (!session || session.user_id !== payload.sub || session.expires_at <= Date.now()) {
         return res.status(401).json({ error: "Authentication required." });
       }
-      const user = db.userById(payload.sub);
+      const user = await db.userById(payload.sub);
       if (!user) return res.status(401).json({ error: "Authentication required." });
       req.auth = { userId: user.id, sessionId: session.id, user };
-      next();
-    } catch {
-      res.status(401).json({ error: "Authentication required." });
+      return next();
+    } catch (error) {
+      return next(error);
     }
   };
 
@@ -171,7 +176,12 @@ export function createAuthService({ db, mailer, env = process.env, uploadsDirect
     const expectedOrigin = new URL(baseUrl).origin;
     if (origin && origin !== expectedOrigin) return res.status(403).json({ error: "Request origin was not accepted." });
     const token = req.get("x-csrf-token");
+    console.log("CSRF token from header:", token);
     const cookieToken = req.authCookies?.csrf ?? cookie(req, "csrf_token");
+    console.log("CSRF token from cookie:", cookieToken);
+    if (!token || !cookieToken) {
+      return res.status(403).json({ error: "CSRF token is missing. Reload and try again." });
+    }
     if (!token || !cookieToken || !validHash(hashSecret(token), hashSecret(cookieToken))) {
       return res.status(403).json({ error: "CSRF token is missing or invalid. Reload and try again." });
     }
@@ -187,36 +197,45 @@ export function createAuthService({ db, mailer, env = process.env, uploadsDirect
       });
       res.json({ csrfToken: value });
     });
+
+
     app.post("/api/auth/signup", csrf, async (req, res, next) => {
       const parsed = signupSchema.safeParse(req.body);
+      console.log("Signup request received:", parsed.success ? parsed.data : req.body);
       if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Signup details are invalid." });
       if (!validateEmailRateLimit(parsed.data.email, "signup")) return res.status(429).json({ error: "Too many signup attempts. Try again later." });
       try {
-        if (db.userByEmail(parsed.data.email)) return res.status(409).json({ error: "An account with this email already exists." });
-        const isFirstUser = db.userCount() === 0;
+        if (await db.userByEmail(parsed.data.email)) return res.status(409).json({ error: "An account with this email already exists." });
+        const isFirstUser = await db.userCount() === 0;
+    
         const user = {
           id: randomUUID(),
           name: parsed.data.name,
           email: parsed.data.email,
           passwordHash: await bcrypt.hash(parsed.data.password, 12),
           createdAt: new Date().toISOString(),
-          legacyDataOwner: isFirstUser,
+          // legacyDataOwner: isFirstUser,
         };
+  
         await db.createUser(user);
         if (isFirstUser) await db.claimLegacyData(user.id);
         const token = randomBytes(32).toString("base64url");
         await db.addAuthToken({ tokenHash: hashSecret(token), userId: user.id, purpose: "verify-email", expiresAt: Date.now() + VERIFICATION_MS });
         await mailer.sendVerification(user.email, originUrl(baseUrl, `/verify-email/${encodeURIComponent(token)}`));
-        res.status(201).json({ user: safeUser(db.userById(user.id)), emailVerificationRequired: true, legacyDataOwner: isFirstUser });
+        res.status(201).json({ user: safeUser(await db.userById(user.id)), emailVerificationRequired: true, legacyDataOwner: isFirstUser });
       } catch (error) { next(error); }
     });
+    
     app.post("/api/auth/login", csrf, async (req, res, next) => {
+      console.log("Login request received:", req.body);
       const parsed = loginSchema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ error: "Enter a valid email and password." });
       const { email, password, rememberMe } = parsed.data;
+      console.log(`Login attempt for email: ${email}, rememberMe: ${rememberMe}`);
       if (!validateEmailRateLimit(email, "login")) return res.status(429).json({ error: "Too many attempts. Try again later." });
       try {
-        const user = db.userByEmail(email);
+        const user = await db.userByEmail(email);
+        console.log(`User found: ${user ? "Yes" : "No"}`);
         const dummyHash = await dummyHashPromise;
         const matches = await bcrypt.compare(password, user?.password_hash ?? dummyHash);
         if (!user || !matches || user.locked_until > Date.now()) {
@@ -228,16 +247,23 @@ export function createAuthService({ db, mailer, env = process.env, uploadsDirect
           return res.status(401).json({ error: "Invalid email or password." });
         }
         await db.updateUser(user.id, { failedAttempts: 0, lockedUntil: 0, lastLoginAt: new Date().toISOString() });
-        const current = db.userById(user.id);
+        const current = await db.userById(user.id);
         await issueSession(res, current, req, rememberMe);
         await db.addAuditEvent({ userId: user.id, action: "login", createdAt: new Date().toISOString(), ipAddress: String(req.ip ?? "").slice(0, 80) });
         res.json({ user: safeUser(current) });
+
+        res.json({
+          success: true,
+          msg: "Login logic is currently disabled for testing purposes. Please implement the login logic as needed.",
+        })
       } catch (error) { next(error); }
     });
+
+
     app.post("/api/auth/logout", csrf, async (req, res, next) => {
       try {
         if (req.authCookies.refresh) {
-          const session = db.sessionByRefreshHash(hashSecret(req.authCookies.refresh));
+          const session = await db.sessionByRefreshHash(hashSecret(req.authCookies.refresh));
           if (session) await db.removeAuthSession(session.id, session.user_id);
         }
         clearSessionCookies(res, env);
@@ -252,7 +278,7 @@ export function createAuthService({ db, mailer, env = process.env, uploadsDirect
         return res.status(401).json({ error: "Session expired. Please sign in again." });
       }
       const tokenHash = hashSecret(refreshToken);
-      const session = db.sessionByRefreshHash(tokenHash);
+      const session = await db.sessionByRefreshHash(tokenHash);
       if (!session) {
         clearSessionCookies(res, env);
         return res.status(401).json({ error: "Session expired. Please sign in again." });
@@ -267,7 +293,7 @@ export function createAuthService({ db, mailer, env = process.env, uploadsDirect
         clearSessionCookies(res, env);
         return res.status(401).json({ error: "Session expired. Please sign in again." });
       }
-      const user = db.userById(session.user_id);
+      const user = await db.userById(session.user_id);
       if (!user) {
         await db.removeAuthSession(session.id);
         clearSessionCookies(res, env);
@@ -299,7 +325,7 @@ export function createAuthService({ db, mailer, env = process.env, uploadsDirect
     });
     app.post("/api/auth/resend-verification", requireAuth, csrf, async (req, res, next) => {
       try {
-        const user = db.userById(req.auth.userId);
+        const user = await db.userById(req.auth.userId);
         if (!validateEmailRateLimit(user.email, "verification")) return res.status(429).json({ error: "Too many verification emails. Try again later." });
         if (!user.email_verified) {
           await db.removeUserTokens(user.id, "verify-email");
@@ -315,7 +341,7 @@ export function createAuthService({ db, mailer, env = process.env, uploadsDirect
       if (!parsed.success) return res.status(400).json({ error: "Enter a valid email address." });
       if (!validateEmailRateLimit(parsed.data.email, "reset")) return res.status(429).json({ error: "Too many requests. Try again later." });
       try {
-        const user = db.userByEmail(parsed.data.email);
+        const user = await db.userByEmail(parsed.data.email);
         if (user) {
           await db.removeUserTokens(user.id, "reset-password");
           const token = randomBytes(32).toString("base64url");
@@ -332,7 +358,7 @@ export function createAuthService({ db, mailer, env = process.env, uploadsDirect
         const token = await db.consumeAuthToken(hashSecret(parsed.data.token), "reset-password", Date.now());
         if (!token) return res.status(400).json({ error: "Reset link is invalid, expired, or already used." });
         await db.updateUser(token.user_id, { passwordHash: await bcrypt.hash(parsed.data.password, 12), failedAttempts: 0, lockedUntil: 0 });
-        const sessions = db.authSessions(token.user_id);
+        const sessions = await db.authSessions(token.user_id);
         for (const session of sessions) await db.removeAuthSession(session.id, token.user_id);
         await db.removeUserTokens(token.user_id);
         await db.addAuditEvent({ userId: token.user_id, action: "password_reset", createdAt: new Date().toISOString(), ipAddress: String(req.ip ?? "").slice(0, 80) });
@@ -344,7 +370,7 @@ export function createAuthService({ db, mailer, env = process.env, uploadsDirect
       const parsed = profileSchema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Profile details are invalid." });
       await db.updateUser(req.auth.userId, { name: parsed.data.name });
-      res.json({ user: safeUser(db.userById(req.auth.userId)) });
+      res.json({ user: safeUser(await db.userById(req.auth.userId)) });
       } catch (error) { next(error); }
     });
     app.post("/api/auth/change-password", requireAuth, csrf, async (req, res, next) => {
@@ -358,11 +384,13 @@ export function createAuthService({ db, mailer, env = process.env, uploadsDirect
       res.json({ message: "Password updated. Other devices have been signed out." });
       } catch (error) { next(error); }
     });
-    app.get("/api/auth/sessions", requireAuth, (req, res) => {
-      res.json({ sessions: db.authSessions(req.auth.userId).map((session) => ({
+    app.get("/api/auth/sessions", requireAuth, async (req, res, next) => {
+      try {
+      res.json({ sessions: (await db.authSessions(req.auth.userId)).map((session) => ({
         id: session.id, createdAt: session.created_at, lastUsedAt: session.last_used_at,
         userAgent: session.user_agent, current: session.id === req.auth.sessionId,
       })) });
+      } catch (error) { next(error); }
     });
     app.delete("/api/auth/sessions/:id", requireAuth, csrf, async (req, res, next) => {
       try {
@@ -373,7 +401,7 @@ export function createAuthService({ db, mailer, env = process.env, uploadsDirect
     });
     app.post("/api/auth/logout-all", requireAuth, csrf, async (req, res, next) => {
       try {
-        for (const session of db.authSessions(req.auth.userId)) await db.removeAuthSession(session.id, req.auth.userId);
+        for (const session of await db.authSessions(req.auth.userId)) await db.removeAuthSession(session.id, req.auth.userId);
         clearSessionCookies(res, env);
         res.status(204).end();
       } catch (error) { next(error); }

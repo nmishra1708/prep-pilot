@@ -9,6 +9,10 @@ function failure(res, status, message) {
   res.status(status).json({ error: message });
 }
 
+function asyncRoute(handler) {
+  return (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
+}
+
 function matchesSearch(record, query) {
   const value = query.toLowerCase();
   return JSON.stringify(record).toLowerCase().includes(value);
@@ -62,10 +66,10 @@ export function registerDataRoutes(app, { db, uploadsDirectory }) {
     },
   });
 
-  app.get("/api/interviews", (req, res) => {
+  app.get("/api/interviews", asyncRoute(async (req, res) => {
     const query = parsePage(req, res);
     if (!query) return;
-    let items = userDb(req).all("interviews");
+    let items = await userDb(req).all("interviews");
     if (query.q) items = items.filter((item) => matchesSearch(item, query.q));
     if (query.status) items = items.filter((item) => item.status === query.status);
     if (query.company) items = items.filter((item) => item.companyName.toLowerCase().includes(query.company.toLowerCase()));
@@ -77,13 +81,13 @@ export function registerDataRoutes(app, { db, uploadsDirectory }) {
     }
     items.sort((a, b) => nextRoundTime(a) - nextRoundTime(b));
     res.json(paginate(items, query.page, query.limit));
-  });
-  app.get("/api/interviews/:id", (req, res) => {
-    const item = userDb(req).get("interviews", req.params.id);
+  }));
+  app.get("/api/interviews/:id", asyncRoute(async (req, res) => {
+    const item = await userDb(req).get("interviews", req.params.id);
     if (!item) return failure(res, 404, "Interview was not found.");
     res.json(item);
-  });
-  app.post("/api/interviews", async (req, res, next) => {
+  }));
+  app.post("/api/interviews", asyncRoute(async (req, res, next) => {
     const parsed = interviewSchema.safeParse(req.body);
     if (!parsed.success) return failure(res, 400, parsed.error.issues[0]?.message ?? "Interview details are invalid.");
     const now = new Date().toISOString();
@@ -97,18 +101,18 @@ export function registerDataRoutes(app, { db, uploadsDirectory }) {
       questions: parsed.data.questions.map((question) => ({ ...question, id: question.id ?? randomUUID() })),
     };
     try {
-      if (userDb(req).get("interviews", item.id)) return failure(res, 409, "An interview with this ID already exists.");
+      if (await userDb(req).get("interviews", item.id)) return failure(res, 409, "An interview with this ID already exists.");
       await userDb(req).put("interviews", item);
       res.status(201).json(item);
     } catch (error) {
       if (error?.message === "Record not found.") return failure(res, 404, "Interview was not found.");
       next(error);
     }
-  });
-  app.put("/api/interviews/:id", updateInterview);
-  app.patch("/api/interviews/:id", updateInterview);
+  }));
+  app.put("/api/interviews/:id", asyncRoute(updateInterview));
+  app.patch("/api/interviews/:id", asyncRoute(updateInterview));
   async function updateInterview(req, res, next) {
-    const existing = userDb(req).get("interviews", req.params.id);
+    const existing = await userDb(req).get("interviews", req.params.id);
     if (!existing) return failure(res, 404, "Interview was not found.");
     const parsed = interviewSchema.safeParse({ ...existing, ...req.body, id: existing.id, createdAt: existing.createdAt, updatedAt: new Date().toISOString() });
     if (!parsed.success) return failure(res, 400, parsed.error.issues[0]?.message ?? "Interview details are invalid.");
@@ -129,19 +133,19 @@ export function registerDataRoutes(app, { db, uploadsDirectory }) {
       next(error);
     }
   }
-  app.delete("/api/interviews/:id", async (req, res, next) => {
-    const item = userDb(req).get("interviews", req.params.id);
+  app.delete("/api/interviews/:id", asyncRoute(async (req, res, next) => {
+    const item = await userDb(req).get("interviews", req.params.id);
     if (!item) return failure(res, 404, "Interview was not found.");
     try {
       await userDb(req).remove("interviews", item.id);
       res.status(204).end();
     } catch (error) { next(error); }
-  });
+  }));
 
-  app.get("/api/study-items", (req, res) => {
+  app.get("/api/study-items", asyncRoute(async (req, res) => {
     const query = parsePage(req, res);
     if (!query) return;
-    let items = userDb(req).all("study_items");
+    let items = await userDb(req).all("study_items");
     if (query.q) items = items.filter((item) => matchesSearch(item, query.q));
     if (query.topic) items = items.filter((item) => item.topic.toLowerCase() === query.topic.toLowerCase());
     if (query.difficulty) items = items.filter((item) => item.difficulty === query.difficulty);
@@ -149,33 +153,33 @@ export function registerDataRoutes(app, { db, uploadsDirectory }) {
     if (query.bookmarked) items = items.filter((item) => item.bookmarked === (query.bookmarked === "true"));
     items.sort((a, b) => a.topic.localeCompare(b.topic) || a.question.localeCompare(b.question));
     res.json(paginate(items, query.page, query.limit));
-  });
-  app.get("/api/study-items/:id", (req, res) => {
-    const item = userDb(req).get("study_items", req.params.id);
+  }));
+  app.get("/api/study-items/:id", asyncRoute(async (req, res) => {
+    const item = await userDb(req).get("study_items", req.params.id);
     if (!item) return failure(res, 404, "Study item was not found.");
-    const companies = userDb(req).all("interviews")
+    const companies = (await userDb(req).all("interviews"))
       .filter((interview) => interview.questions.some((question) => question.studyItemId === item.id))
       .map((interview) => interview.companyName);
     res.json({ ...item, sourceCompanies: [...new Set([...(item.sourceCompanies ?? []), ...companies])] });
-  });
-  app.post("/api/study-items", async (req, res, next) => {
+  }));
+  app.post("/api/study-items", asyncRoute(async (req, res, next) => {
     const parsed = studyItemSchema.safeParse(req.body);
     if (!parsed.success) return failure(res, 400, parsed.error.issues[0]?.message ?? "Study item details are invalid.");
     const now = new Date().toISOString();
     const item = { ...parsed.data, id: parsed.data.id ?? randomUUID(), userId: req.auth.userId, createdAt: parsed.data.createdAt ?? now, updatedAt: now };
     try {
-      if (userDb(req).get("study_items", item.id)) return failure(res, 409, "A study item with this ID already exists.");
+      if (await userDb(req).get("study_items", item.id)) return failure(res, 409, "A study item with this ID already exists.");
       await userDb(req).put("study_items", item);
       res.status(201).json(item);
     } catch (error) {
       if (error?.message === "Record not found.") return failure(res, 404, "Study item was not found.");
       next(error);
     }
-  });
-  app.put("/api/study-items/:id", updateStudyItem);
-  app.patch("/api/study-items/:id", updateStudyItem);
+  }));
+  app.put("/api/study-items/:id", asyncRoute(updateStudyItem));
+  app.patch("/api/study-items/:id", asyncRoute(updateStudyItem));
   async function updateStudyItem(req, res, next) {
-    const existing = userDb(req).get("study_items", req.params.id);
+    const existing = await userDb(req).get("study_items", req.params.id);
     if (!existing) return failure(res, 404, "Study item was not found.");
     const parsed = studyItemSchema.safeParse({ ...existing, ...req.body, id: existing.id, createdAt: existing.createdAt, updatedAt: new Date().toISOString() });
     if (!parsed.success) return failure(res, 400, parsed.error.issues[0]?.message ?? "Study item details are invalid.");
@@ -189,24 +193,27 @@ export function registerDataRoutes(app, { db, uploadsDirectory }) {
       next(error);
     }
   }
-  app.delete("/api/study-items/:id", async (req, res, next) => {
-    const item = userDb(req).get("study_items", req.params.id);
+  app.delete("/api/study-items/:id", asyncRoute(async (req, res, next) => {
+    const item = await userDb(req).get("study_items", req.params.id);
     if (!item) return failure(res, 404, "Study item was not found.");
     try {
       await removeDiagramFile(item.diagram, uploadsDirectory, req.auth.userId);
       await userDb(req).remove("study_items", item.id);
-      const interviews = userDb(req).all("interviews").map((interview) => ({
+      const currentInterviews = await userDb(req).all("interviews");
+      const interviews = currentInterviews.map((interview) => ({
         ...interview,
         questions: interview.questions.map((question) => question.studyItemId === item.id
           ? { ...question, studyItemId: "" }
           : question),
       }));
-      for (const interview of interviews.filter((entry) => userDb(req).get("interviews", entry.id)?.questions.some((question) => question.studyItemId === item.id))) {
+      for (const interview of interviews.filter((entry) => currentInterviews
+        .find((current) => current.id === entry.id)
+        ?.questions.some((question) => question.studyItemId === item.id))) {
         await userDb(req).put("interviews", { ...interview, updatedAt: new Date().toISOString() });
       }
       res.status(204).end();
     } catch (error) { next(error); }
-  });
+  }));
 
   app.post("/api/study-items/diagrams", (req, res, next) => {
     upload.single("diagram")(req, res, async (error) => {
@@ -240,18 +247,18 @@ export function registerDataRoutes(app, { db, uploadsDirectory }) {
     });
   });
 
-  app.get("/api/study-items/diagrams/:filename", (req, res, next) => {
+  app.get("/api/study-items/diagrams/:filename", asyncRoute(async (req, res, next) => {
     if (!/^[a-zA-Z0-9_-]+\.(?:png|jpe?g|svg)$/i.test(req.params.filename)) return failure(res, 404, "Diagram was not found.");
     const content = `/api/study-items/diagrams/${req.params.filename}`;
-    const ownsFile = userDb(req).all("study_items").some((item) => item.diagram?.type === "image" && item.diagram.content === content);
+    const ownsFile = (await userDb(req).all("study_items")).some((item) => item.diagram?.type === "image" && item.diagram.content === content);
     if (!ownsFile) return failure(res, 404, "Diagram was not found.");
     res.set({ "X-Content-Type-Options": "nosniff", "Content-Security-Policy": "default-src 'none'; sandbox" });
     res.sendFile(path.join(uploadsDirectory, req.auth.userId, req.params.filename), (error) => { if (error) next(error); });
-  });
+  }));
 
-  app.get("/api/data/export", (_req, res) => {
-    res.json({ exportedAt: new Date().toISOString(), interviews: userDb(_req).all("interviews"), studyItems: userDb(_req).all("study_items") });
-  });
+  app.get("/api/data/export", asyncRoute(async (req, res) => {
+    res.json({ exportedAt: new Date().toISOString(), interviews: await userDb(req).all("interviews"), studyItems: await userDb(req).all("study_items") });
+  }));
   app.delete("/api/data", async (req, res, next) => {
     try {
       await userDb(req).clear();

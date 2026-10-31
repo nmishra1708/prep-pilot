@@ -47,6 +47,7 @@ Required variables include:
 | Variable | Scope | Notes |
 |---|---|---|
 | `DATABASE_URL` | Dev / Preview / Prod | Hosted Postgres (Neon, Supabase, Railway, etc.) |
+| `DIRECT_URL` | Dev / Preview / Prod | Direct, non-pooled Postgres URL used by Prisma migrations |
 | `JWT_ACCESS_SECRET` | Dev / Preview / Prod | 32+ chars, production-only secret |
 | `TOKEN_HASH_SECRET` | Dev / Preview / Prod | 32+ chars, separate from access secret |
 | `JWT_REFRESH_SECRET` | Dev / Preview / Prod | Keep distinct from access secret |
@@ -79,8 +80,19 @@ For a specific environment:
 ```bash
 vercel env add DATABASE_URL production
 vercel env add DATABASE_URL preview
+vercel env add DIRECT_URL production
+vercel env add DIRECT_URL preview
 vercel env add JWT_ACCESS_SECRET production
 ```
+
+Before running a production migration from your workstation, pull that environment's variables locally:
+
+```bash
+vercel env pull .env
+npm run db:migrate
+```
+
+Repeat with the Preview environment selected when migrating its separate database. `.env` is ignored by git.
 
 ## 5. Vercel-specific production changes
 
@@ -88,6 +100,7 @@ This project has been updated to be serverless-friendly:
 
 - `server/index.mjs` now exports the app and starts `app.listen()` only for local development.
 - `/api/index.ts` exports the app for Vercel serverless functions.
+- Vercel uses Prisma with PostgreSQL; local development without `DATABASE_URL` continues to use SQLite.
 - `vercel.json` rewrites API paths and falls back to `index.html` for React Router routes.
 - The app requires production environment variables to be present and fails with a clear message if required values are missing.
 - Browser-facing code uses relative `/api` URLs, not hard-coded localhost values.
@@ -100,7 +113,7 @@ Vercel functions do not have a durable filesystem. Production must use hosted se
 - Redis: Upstash Redis for cache, throttling, and shared state
 - File uploads: Vercel Blob or S3 presigned URLs; keep only storage keys in the database
 
-The local SQLite file-based implementation is for development only. In production, set `DATABASE_URL` to a hosted Postgres database and keep the app connection cached across invocations.
+The local SQLite file-based implementation is for development only. In production, set `DATABASE_URL` to your provider's pooled PostgreSQL URL and `DIRECT_URL` to its direct URL. Prisma's client is cached globally between warm function invocations. Existing local SQLite data is not automatically copied; export and import data separately before switching production traffic.
 
 ## 7. Deploy steps
 
@@ -109,8 +122,8 @@ The local SQLite file-based implementation is for development only. In productio
 3. Choose the Vite preset and set the Root Directory to `.`.
 4. Set the build command and output directory as above.
 5. Add Production and Preview environment variables.
-6. Configure a Postgres database and Redis service.
-7. Run the migration command for your hosted database.
+6. Configure a PostgreSQL database and set both `DATABASE_URL` and `DIRECT_URL`. Use separate Preview and Production databases.
+7. Run `npm run db:migrate` against the target database, then deploy.
 8. Deploy.
 9. Check the health endpoint: `/api/health`.
 10. Confirm HTTPS and custom domain configuration.
@@ -140,6 +153,10 @@ The default function limit is 30 seconds. Long-running tasks such as report gene
 ### Missing env var
 
 Check `process.env` values in the dashboard. The app intentionally fails fast with a clear error if production-required values are missing.
+
+### Prisma cannot connect or tables are missing
+
+Confirm `DATABASE_URL` points to the pooled PostgreSQL connection and `DIRECT_URL` points to the direct connection. Run `npm run db:migrate` with the correct environment before deploying. `DATABASE_URL` alone does not create tables.
 
 ### CORS or cookie errors
 

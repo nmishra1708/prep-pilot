@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id              String        @id
+  name            String
+  email           String        @unique
+  passwordHash    String        @map("password_hash")
+  emailVerified   Boolean       @default(false) @map("email_verified")
+  legacyDataOwner Boolean       @default(false) @map("legacy_data_owner")
+  createdAt       DateTime      @map("created_at")
+  lastLoginAt     DateTime?     @map("last_login_at")
+  failedAttempts  Int           @default(0) @map("failed_attempts")
+  lockedUntil     BigInt        @default(0) @map("locked_until")
+  sessions        AuthSession[]
+  tokens          AuthToken[]
+  auditEvents     AuditEvent[]
+  interviews      Interview[]
+  studyItems      StudyItem[]
+
+  @@map("users")
+}
+
+model Interview {
+  id        String    @id
+  userId    String?   @map("user_id")
+  createdAt DateTime  @map("created_at")
+  updatedAt DateTime  @map("updated_at")
+  data      Json
+  user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, updatedAt])
+  @@map("interviews")
+}
+
+model StudyItem {
+  id        String    @id
+  userId    String?   @map("user_id")
+  createdAt DateTime  @map("created_at")
+  updatedAt DateTime  @map("updated_at")
+  topic     String
+  question  String
+  bookmarked Boolean @default(false)
+  data      Json
+  user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, topic])
+  @@index([userId, updatedAt])
+  @@map("study_items")
+}
+
+model AuthSession {
+  id         String               @id
+  userId     String               @map("user_id")
+  refreshHash String              @unique @map("refresh_hash")
+  createdAt  DateTime             @map("created_at")
+  expiresAt  BigInt               @map("expires_at")
+  lastUsedAt DateTime             @map("last_used_at")
+  userAgent  String               @map("user_agent")
+  ipAddress  String               @map("ip_address")
+  user       User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshHistory AuthRefreshHistory[]
+
+  @@index([userId, lastUsedAt])
+  @@map("auth_sessions")
+}
+
+model AuthRefreshHistory {
+  tokenHash String      @id @map("token_hash")
+  sessionId String      @map("session_id")
+  expiresAt BigInt      @map("expires_at")
+  session   AuthSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("auth_refresh_history")
+}
+
+model AuthToken {
+  tokenHash String   @id @map("token_hash")
+  userId    String   @map("user_id")
+  purpose   String
+  expiresAt BigInt   @map("expires_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@index([expiresAt])
+  @@map("auth_tokens")
+}
+
+model AuditEvent {
+  id        String   @id
+  userId    String   @map("user_id")
+  action    String
+  createdAt DateTime @map("created_at")
+  ipAddress String   @map("ip_address")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("audit_events")
+}

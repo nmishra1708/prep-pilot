@@ -328,6 +328,6 @@ export async function createDatabase({ filename = process.env.APP_DATABASE ?? pa
     all, get, put, remove, clear, userScoped, createUser, userByEmail, userById, updateUser, deleteUser,
     userCount, allUsers, claimLegacyData, createAuthSession, authSession, authSessions, rotateAuthSession,
     sessionByRefreshHash, removeAuthSession, removeOtherAuthSessions, addAuthToken, consumeAuthToken, removeUserTokens,
-    addAuditEvent, close, filename,
+    addAuditEvent, health: () => { database.exec("SELECT 1"); return true; }, close, filename,
   };
 }

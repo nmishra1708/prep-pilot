@@ -3,6 +3,7 @@ import express from "express";
 import { z } from "zod";
 import { registerJobRoutes } from "./jobs.mjs";
 import { createDatabase } from "./data/database.mjs";
+import { createPrismaDatabase } from "./data/prisma-database.mjs";
 import { registerDataRoutes } from "./data/api.mjs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,9 +18,14 @@ const port = Number(process.env.PORT ?? 8787);
 const isLocalServer = !process.env.VERCEL && process.env.NODE_ENV !== "production";
 const serverDirectory = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDirectory = path.join(serverDirectory, "uploads");
-const db = await createDatabase();
+
+const db = process.env.NODE_ENV === "development" || process.env.DATABASE_URL
+  ? await createPrismaDatabase()
+  : await createDatabase();
+
+
 const mailer = createMailer();
-const auth = createAuthService({ db, mailer, uploadsDirectory, baseUrl: process.env.FRONTEND_ORIGIN ?? "http://localhost:5173" });
+const auth = createAuthService({ db, mailer, uploadsDirectory, baseUrl: process.env.APP_URL ?? process.env.FRONTEND_ORIGIN ?? "http://localhost:5173" });
 const requestSchema = z.object({
   question: z.string().min(1).max(2000),
   transcript: z.string().max(30000),
@@ -78,6 +84,15 @@ for (const route of ["/api/auth/signup", "/api/auth/login", "/api/auth/verify-em
   app.use(route, authIpLimiter);
 }
 auth.registerRoutes(app);
+app.get("/api/health", async (_req, res, next) => {
+  try {
+    await db.health();
+    console.log("Database connection is healthy.");
+    res.json({ ok: true, database: "connected" });
+  } catch (error) {
+    next(error);
+  }
+});
 app.use("/api", auth.requireAuth, auth.csrf);
 app.use("/api/jobs", auth.requireVerified);
 app.use("/api/evaluate", auth.requireVerified);
@@ -148,15 +163,6 @@ app.post("/api/evaluate", async (req, res) => {
       ...localFallback(transcript, rubric),
       message: "The evaluator could not be reached or returned invalid data. A local rubric fallback is shown.",
     });
-  }
-});
-
-app.get("/api/health", async (_req, res) => {
-  try {
-    const hasDb = typeof db?.filename === "string";
-    res.json({ ok: true, database: hasDb ? "ready" : "unknown" });
-  } catch {
-    res.status(500).json({ ok: false, error: "Database unavailable." });
   }
 });
 

@@ -5,11 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "server": "node server/index.mjs",
+    "server": "nodemon server/index.mjs",
     "migrate:legacy": "node server/auth/claim-legacy-data.mjs",
     "build": "tsc -b && vite build",
     "start": "vite --host 0.0.0.0 preview",
-    "vercel-build": "npm run build",
+    "vercel-build": "prisma generate && npm run build",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
     "test": "vitest run"
   },
   "engines": {
@@ -17,6 +19,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^6.0.2",
+    "@prisma/client": "^6.19.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dompurify": "^3.2.6",
@@ -51,6 +54,7 @@
     "@types/sql.js": "^1.4.9",
     "@vitejs/plugin-react": "^6.1.2",
     "jsdom": "^25.0.1",
+    "prisma": "^6.19.0",
     "typescript": "~5.6.2",
     "vite": "^8.3.5",
     "vitest": "^4.1.12"

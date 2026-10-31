@@ -24,6 +24,8 @@ This project is prepared for a single-repository Vercel deployment with:
 
 Follow the instructions in [DEPLOYMENT.md](./DEPLOYMENT.md).
 
+Production uses Prisma with PostgreSQL. Local development without `DATABASE_URL` continues to use the SQLite database. For Vercel, configure both `DATABASE_URL` (pooled) and `DIRECT_URL` (direct), then run `npm run db:migrate` against each environment before using the API. Existing SQLite records are not automatically transferred.
+
 ## Job Search & Application Tracker
 
 The **Job tracker** button opens a skills-based Google Jobs search and a locally stored applications list. Add skills and profile suggestions, choose years or a career level, location, remote and optional filters, then search. The backend normalizes SerpApi Google Jobs results, ranks experience requirements, caches identical pages for 45 minutes, and allows 20 requests per minute per client. Cached repeats do not make a new SerpApi request. Search counts are displayed when the upstream response includes them.
@@ -115,7 +117,7 @@ The Study Library supports topic grouping and search, filters for difficulty/con
 
 ### Persistence, privacy, and API
 
-The Node backend creates a SQLite database at `server/data/app.sqlite` on first run and seeds it with three example interviews and ten study items. The database and uploaded diagrams are excluded from source control. Set `APP_DATABASE` in the server environment to use a different SQLite file path. Sample HR contacts are fictional. Interview contact information is stored locally by the backend and is not included in logs.
+Local development without `DATABASE_URL` creates a SQLite database at `server/data/app.sqlite` and seeds it with three example interviews and ten study items. When `DATABASE_URL` is configured, the backend uses Prisma with PostgreSQL; Vercel always requires this hosted database. Run `npm run db:migrate` to create the PostgreSQL schema. The SQLite database and uploaded diagrams are excluded from source control. Sample HR contacts are fictional. Interview contact information is stored by the backend and is not included in logs.
 
 The REST API validates request bodies and query filters with Zod:
 
