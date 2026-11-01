@@ -5,14 +5,14 @@ This project keeps a single repository with:
 - a Vite React + TypeScript app at the repository root for the front end
 - a Vercel serverless API under `/api` for Express-compatible routes
 
-Use a single project in Vercel with the repository root as the Root Directory. Vite builds the front end into `dist`, while `/api/index.ts` serves the API.
+Use a single project in Vercel with the repository root as the Root Directory. Vite builds the front end into `dist`, while `/api/index.mjs` serves the API as an explicit ES module.
 
 ## 1. Recommended project structure
 
 ```text
 .
 ├── api/
-│   └── index.ts
+│   └── index.mjs
 ├── src/
 ├── server/
 ├── dist/
@@ -64,7 +64,7 @@ Required variables include:
 
 Only variables starting with `VITE_` are safe to expose to the browser. Never add a secret key to a `VITE_*` variable.
 
-For Production, `DATABASE_URL`, `DIRECT_URL`, `JWT_ACCESS_SECRET`, `TOKEN_HASH_SECRET`, and `SMTP_HOST` are required. The server intentionally refuses to start without the database, auth secrets, or mail transport; missing values can make every API route return a Vercel 500 during function initialization. Configure `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, and `MAIL_FROM` according to your provider.
+For Production, set `DATABASE_URL`, `JWT_ACCESS_SECRET`, and `TOKEN_HASH_SECRET` for database-backed authentication. `DIRECT_URL` is needed when applying Prisma migrations. Configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, and `MAIL_FROM` for email verification and password-reset flows; missing SMTP settings should affect those email flows, not prevent the serverless function from initializing.
 
 ## 4. CLI commands
 
@@ -101,7 +101,7 @@ Repeat with the Preview environment selected when migrating its separate databas
 This project has been updated to be serverless-friendly:
 
 - `server/index.mjs` now exports the app and starts `app.listen()` only for local development.
-- `/api/index.ts` exports the app for Vercel serverless functions.
+- `/api/index.mjs` exports the app as an ES module for Vercel serverless functions.
 - Vercel uses Prisma with PostgreSQL; local development without `DATABASE_URL` continues to use SQLite.
 - `vercel.json` rewrites API paths and falls back to `index.html` for React Router routes.
 - The app requires production environment variables to be present and fails with a clear message if required values are missing.

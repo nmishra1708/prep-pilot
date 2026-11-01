@@ -14,7 +14,7 @@ import { createAuthService } from "./auth/service.mjs";
 import { createMailer } from "./auth/mailer.mjs";
 
 const app = express();
-const port = Number(process.env.PORT ?? 8787);
+// const port = Number(process.env.PORT ?? 8787);
 // const isLocalServer = !process.env.VERCEL && process.env.NODE_ENV !== "production";
 const serverDirectory = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDirectory = path.join(serverDirectory, "uploads");

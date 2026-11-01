@@ -18,7 +18,7 @@ Open the localhost URL printed by Vite. The Vite dev server proxies `/api` reque
 This project is prepared for a single-repository Vercel deployment with:
 
 - a Vite frontend built to `dist`
-- a serverless API exported from `/api/index.ts`
+- a serverless API exported from `/api/index.mjs`
 - `vercel.json` with SPA rewrites and security headers
 - a CI workflow for tests and build checks
 
