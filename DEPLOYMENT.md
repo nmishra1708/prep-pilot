@@ -64,6 +64,8 @@ Required variables include:
 
 Only variables starting with `VITE_` are safe to expose to the browser. Never add a secret key to a `VITE_*` variable.
 
+For Production, `DATABASE_URL`, `DIRECT_URL`, `JWT_ACCESS_SECRET`, `TOKEN_HASH_SECRET`, and `SMTP_HOST` are required. The server intentionally refuses to start without the database, auth secrets, or mail transport; missing values can make every API route return a Vercel 500 during function initialization. Configure `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, and `MAIL_FROM` according to your provider.
+
 ## 4. CLI commands
 
 ```bash

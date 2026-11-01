@@ -176,12 +176,7 @@ export function createAuthService({ db, mailer, env = process.env, uploadsDirect
     const expectedOrigin = new URL(baseUrl).origin;
     if (origin && origin !== expectedOrigin) return res.status(403).json({ error: "Request origin was not accepted." });
     const token = req.get("x-csrf-token");
-    console.log("CSRF token from header:", token);
     const cookieToken = req.authCookies?.csrf ?? cookie(req, "csrf_token");
-    console.log("CSRF token from cookie:", cookieToken);
-    if (!token || !cookieToken) {
-      return res.status(403).json({ error: "CSRF token is missing. Reload and try again." });
-    }
     if (!token || !cookieToken || !validHash(hashSecret(token), hashSecret(cookieToken))) {
       return res.status(403).json({ error: "CSRF token is missing or invalid. Reload and try again." });
     }
@@ -201,7 +196,6 @@ export function createAuthService({ db, mailer, env = process.env, uploadsDirect
 
     app.post("/api/auth/signup", csrf, async (req, res, next) => {
       const parsed = signupSchema.safeParse(req.body);
-      console.log("Signup request received:", parsed.success ? parsed.data : req.body);
       if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Signup details are invalid." });
       if (!validateEmailRateLimit(parsed.data.email, "signup")) return res.status(429).json({ error: "Too many signup attempts. Try again later." });
       try {
@@ -214,7 +208,7 @@ export function createAuthService({ db, mailer, env = process.env, uploadsDirect
           email: parsed.data.email,
           passwordHash: await bcrypt.hash(parsed.data.password, 12),
           createdAt: new Date().toISOString(),
-          // legacyDataOwner: isFirstUser,
+          legacyDataOwner: isFirstUser,
         };
   
         await db.createUser(user);
@@ -223,19 +217,19 @@ export function createAuthService({ db, mailer, env = process.env, uploadsDirect
         await db.addAuthToken({ tokenHash: hashSecret(token), userId: user.id, purpose: "verify-email", expiresAt: Date.now() + VERIFICATION_MS });
         await mailer.sendVerification(user.email, originUrl(baseUrl, `/verify-email/${encodeURIComponent(token)}`));
         res.status(201).json({ user: safeUser(await db.userById(user.id)), emailVerificationRequired: true, legacyDataOwner: isFirstUser });
-      } catch (error) { next(error); }
+      } catch (error) {
+        if (error?.code === "P2002") return res.status(409).json({ error: "An account with this email already exists." });
+        next(error);
+      }
     });
     
     app.post("/api/auth/login", csrf, async (req, res, next) => {
-      console.log("Login request received:", req.body);
       const parsed = loginSchema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ error: "Enter a valid email and password." });
       const { email, password, rememberMe } = parsed.data;
-      console.log(`Login attempt for email: ${email}, rememberMe: ${rememberMe}`);
       if (!validateEmailRateLimit(email, "login")) return res.status(429).json({ error: "Too many attempts. Try again later." });
       try {
         const user = await db.userByEmail(email);
-        console.log(`User found: ${user ? "Yes" : "No"}`);
         const dummyHash = await dummyHashPromise;
         const matches = await bcrypt.compare(password, user?.password_hash ?? dummyHash);
         if (!user || !matches || user.locked_until > Date.now()) {
@@ -251,11 +245,6 @@ export function createAuthService({ db, mailer, env = process.env, uploadsDirect
         await issueSession(res, current, req, rememberMe);
         await db.addAuditEvent({ userId: user.id, action: "login", createdAt: new Date().toISOString(), ipAddress: String(req.ip ?? "").slice(0, 80) });
         res.json({ user: safeUser(current) });
-
-        res.json({
-          success: true,
-          msg: "Login logic is currently disabled for testing purposes. Please implement the login logic as needed.",
-        })
       } catch (error) { next(error); }
     });
 

@@ -18,14 +18,16 @@ const port = Number(process.env.PORT ?? 8787);
 const isLocalServer = !process.env.VERCEL && process.env.NODE_ENV !== "production";
 const serverDirectory = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDirectory = path.join(serverDirectory, "uploads");
+const appUrl = process.env.APP_URL
+  ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : process.env.FRONTEND_ORIGIN ?? "http://localhost:5173");
 
-const db = process.env.NODE_ENV === "production" || process.env.DATABASE_URL
+const db = process.env.VERCEL || process.env.NODE_ENV === "production" || process.env.DATABASE_URL
   ? await createPrismaDatabase()
   : await createDatabase();
 
 
 const mailer = createMailer();
-const auth = createAuthService({ db, mailer, uploadsDirectory, baseUrl: process.env.APP_URL ?? process.env.FRONTEND_ORIGIN ?? "http://localhost:5173" });
+const auth = createAuthService({ db, mailer, uploadsDirectory, baseUrl: appUrl });
 const requestSchema = z.object({
   question: z.string().min(1).max(2000),
   transcript: z.string().max(30000),
@@ -61,7 +63,7 @@ app.use(helmet({
   } : false,
 }));
 app.use(cors({
-  origin: process.env.FRONTEND_ORIGIN ?? "http://localhost:5173",
+  origin: new URL(appUrl).origin,
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "X-CSRF-Token"],
@@ -87,7 +89,6 @@ auth.registerRoutes(app);
 app.get("/api/health", async (_req, res, next) => {
   try {
     await db.health();
-    console.log("Database connection is healthy.");
     res.json({ ok: true, database: "connected" });
   } catch (error) {
     next(error);
@@ -167,6 +168,10 @@ app.post("/api/evaluate", async (req, res) => {
 });
 
 app.use((error, _req, res, next) => {
+  console.error("API request failed", {
+    name: error?.name ?? "Error",
+    code: error?.code ?? "UNKNOWN",
+  });
   if (error instanceof SyntaxError && "body" in error) {
     res.status(400).json({ error: "Request body must be valid JSON." });
     return;
