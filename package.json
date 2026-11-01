@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "server": "nodemon server/index.mjs",
+    "server": "nodemon server/local.mjs",
     "migrate:legacy": "node server/auth/claim-legacy-data.mjs",
     "build": "tsc -b && vite build",
     "start": "vite --host 0.0.0.0 preview",

@@ -15,7 +15,7 @@ import { createMailer } from "./auth/mailer.mjs";
 
 const app = express();
 const port = Number(process.env.PORT ?? 8787);
-const isLocalServer = !process.env.VERCEL && process.env.NODE_ENV !== "production";
+// const isLocalServer = !process.env.VERCEL && process.env.NODE_ENV !== "production";
 const serverDirectory = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDirectory = path.join(serverDirectory, "uploads");
 const appUrl = process.env.APP_URL
@@ -199,10 +199,10 @@ app.use((error, _req, res, next) => {
   res.status(500).json({ error: "The server could not complete this request." });
 });
 
-if (isLocalServer) {
-  app.listen(port, process.env.HOST ?? "127.0.0.1", () => {
-    console.log(`Interview evaluator listening on http://127.0.0.1:${port}`);
-  });
-}
+// if (isLocalServer) {
+//   app.listen(port, process.env.HOST ?? "127.0.0.1", () => {
+//     console.log(`Interview evaluator listening on http://127.0.0.1:${port}`);
+//   });
+// }
 
 export default app;
