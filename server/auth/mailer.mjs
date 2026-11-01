@@ -6,11 +6,22 @@ export function createMailer(env = process.env) {
   const smtpUser = env.SMTP_USER;
   const smtpPassword = env.SMTP_PASSWORD;
   const from = env.MAIL_FROM ?? "Say it. See it. <no-reply@localhost>";
+  const configured = Boolean(smtpHost);
 
   if (!smtpHost) {
-    if (env.NODE_ENV === "production") throw new Error("SMTP_HOST is required in production.");
+    if (env.NODE_ENV === "production") {
+      const missingConfiguration = () => {
+        throw Object.assign(new Error("SMTP_HOST is required for email delivery."), { code: "MAIL_CONFIGURATION_MISSING" });
+      };
+      return {
+        isConfigured: () => false,
+        async sendVerification() { missingConfiguration(); },
+        async sendPasswordReset() { missingConfiguration(); },
+      };
+    }
     const messages = new Map();
     return {
+      isConfigured: () => true,
       async sendVerification(email, url) {
         messages.set(email, { purpose: "verification", url, createdAt: Date.now() });
         console.info(`Development email queued: verification for ${email}`);
@@ -34,6 +45,7 @@ export function createMailer(env = process.env) {
     auth: smtpUser ? { user: smtpUser, pass: smtpPassword } : undefined,
   });
   return {
+    isConfigured: () => configured,
     async sendVerification(email, url) {
       await transporter.sendMail({ from, to: email, subject: "Verify your Say it. See it. account", text: `Verify your email address: ${url}\n\nThis link expires in 24 hours.` });
     },

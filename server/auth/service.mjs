@@ -88,7 +88,9 @@ function cookie(req, name) {
 
 function accessSecret(env) {
   if (env.JWT_ACCESS_SECRET && env.JWT_ACCESS_SECRET.length >= 32) return env.JWT_ACCESS_SECRET;
-  if (env.NODE_ENV === "production") throw new Error("JWT_ACCESS_SECRET must contain at least 32 characters.");
+  if (env.NODE_ENV === "production") {
+    throw Object.assign(new Error("JWT_ACCESS_SECRET must contain at least 32 characters."), { code: "MISSING_JWT_ACCESS_SECRET" });
+  }
   return "local-development-only-access-secret-change-before-deploying";
 }
 
@@ -114,10 +116,17 @@ function parseCookies(req, _res, next) {
 }
 
 export function createAuthService({ db, mailer, env = process.env, uploadsDirectory, baseUrl = env.FRONTEND_ORIGIN ?? "http://localhost:5173" }) {
-  if (env.NODE_ENV === "production" && (!env.JWT_ACCESS_SECRET || env.JWT_ACCESS_SECRET.length < 32 || !env.TOKEN_HASH_SECRET || env.TOKEN_HASH_SECRET.length < 32)) {
-    throw new Error("JWT_ACCESS_SECRET and TOKEN_HASH_SECRET must each contain at least 32 characters in production.");
-  }
-  const hashSecret = (value) => hash(value, env.TOKEN_HASH_SECRET ?? "local-development-only-token-pepper");
+  const hashSecret = (value) => {
+    if (env.NODE_ENV === "production" && (!env.TOKEN_HASH_SECRET || env.TOKEN_HASH_SECRET.length < 32)) {
+      throw Object.assign(new Error("TOKEN_HASH_SECRET must contain at least 32 characters."), { code: "MISSING_TOKEN_HASH_SECRET" });
+    }
+    return hash(value, env.TOKEN_HASH_SECRET ?? "local-development-only-token-pepper");
+  };
+  const emailServiceUnavailable = (res) => {
+    if (mailer.isConfigured?.() !== false) return false;
+    res.status(503).json({ error: "Email service is not configured. Contact the site administrator." });
+    return true;
+  };
   const issueSession = async (res, user, req, rememberMe) => {
     const id = randomUUID();
     const refreshToken = newRefreshToken();
@@ -198,6 +207,7 @@ export function createAuthService({ db, mailer, env = process.env, uploadsDirect
       const parsed = signupSchema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Signup details are invalid." });
       if (!validateEmailRateLimit(parsed.data.email, "signup")) return res.status(429).json({ error: "Too many signup attempts. Try again later." });
+      if (emailServiceUnavailable(res)) return;
       try {
         if (await db.userByEmail(parsed.data.email)) return res.status(409).json({ error: "An account with this email already exists." });
         const isFirstUser = await db.userCount() === 0;
@@ -313,6 +323,7 @@ export function createAuthService({ db, mailer, env = process.env, uploadsDirect
       } catch (error) { next(error); }
     });
     app.post("/api/auth/resend-verification", requireAuth, csrf, async (req, res, next) => {
+      if (emailServiceUnavailable(res)) return;
       try {
         const user = await db.userById(req.auth.userId);
         if (!validateEmailRateLimit(user.email, "verification")) return res.status(429).json({ error: "Too many verification emails. Try again later." });
@@ -329,6 +340,7 @@ export function createAuthService({ db, mailer, env = process.env, uploadsDirect
       const parsed = emailOnlySchema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ error: "Enter a valid email address." });
       if (!validateEmailRateLimit(parsed.data.email, "reset")) return res.status(429).json({ error: "Too many requests. Try again later." });
+      if (emailServiceUnavailable(res)) return;
       try {
         const user = await db.userByEmail(parsed.data.email);
         if (user) {

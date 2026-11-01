@@ -172,6 +172,14 @@ app.use((error, _req, res, next) => {
     name: error?.name ?? "Error",
     code: error?.code ?? "UNKNOWN",
   });
+  if (["MISSING_JWT_ACCESS_SECRET", "MISSING_TOKEN_HASH_SECRET", "MAIL_CONFIGURATION_MISSING"].includes(error?.code)) {
+    res.status(503).json({ error: error.message });
+    return;
+  }
+  if (typeof error?.code === "string" && error.code.startsWith("P")) {
+    res.status(503).json({ error: "Database unavailable. Check the PostgreSQL connection and apply Prisma migrations." });
+    return;
+  }
   if (error instanceof SyntaxError && "body" in error) {
     res.status(400).json({ error: "Request body must be valid JSON." });
     return;

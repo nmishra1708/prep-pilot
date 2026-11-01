@@ -51,12 +51,6 @@ function storedRecord(row) {
 }
 
 export async function createPrismaDatabase() {
-  if (!process.env.DATABASE_URL) {
-    throw new Error("DATABASE_URL is required in production. Configure a hosted PostgreSQL database.");
-  }
-
-  await prisma.$connect();
-
   const all = async (table, userId) => {
     const records = await tableModel(table).findMany({
       where: userId === undefined ? { userId: null } : { userId },
