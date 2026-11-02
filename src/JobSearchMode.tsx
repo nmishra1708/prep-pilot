@@ -3,6 +3,7 @@ import { useApplications } from "./hooks/useApplications";
 import { useJobSearch } from "./hooks/useJobSearch";
 import { getMatchedSkills, skillMatchScore } from "./jobs/search";
 import { useAuth } from "./auth/context";
+import MessageTemplateManager from "./jobs/MessageTemplateManager";
 import type {
   ApplicationRecord,
   ExperienceLevel,
@@ -11,7 +12,7 @@ import type {
   JobStatus,
 } from "./jobs/types";
 
-type Page = "search" | "applications";
+type Page = "search" | "applications" | "templates";
 const SEARCH_KEY = "say-it-last-job-search";
 const PROFILE_SKILLS_KEY = "say-it-profile-skills";
 const DEFAULT_SKILLS = ["Node.js", "React", "MongoDB", "LangChain"];
@@ -331,12 +332,13 @@ export default function JobSearchMode({ onBack }: { onBack: () => void }) {
       <section className="job-workspace" aria-labelledby="job-page-title">
         <header className="job-page-heading">
           <p className="eyebrow"><span className="eyebrow-line" /> A CALMER JOB SEARCH</p>
-          <h1 id="job-page-title">{page === "search" ? <>Find your next<br /><em>good fit.</em></> : <>Keep your<br /><em>momentum.</em></>}</h1>
-          <p className="intro-copy">Search, save, and keep each application in one quiet place.</p>
+          <h1 id="job-page-title">{page === "search" ? <>Find your next<br /><em>good fit.</em></> : page === "applications" ? <>Keep your<br /><em>momentum.</em></> : <>Find the right<br /><em>words.</em></>}</h1>
+          <p className="intro-copy">{page === "templates" ? "Keep your networking and follow-up messages close at hand." : "Search, save, and keep each application in one quiet place."}</p>
         </header>
         <nav className="job-tabs" aria-label="Job tracker pages">
-          <button type="button" className={page === "search" ? "active" : ""} onClick={() => setPage("search")}>Find jobs</button>
-          <button type="button" className={page === "applications" ? "active" : ""} onClick={() => setPage("applications")}>My Applications <span>{applicationApi.applications.length}</span></button>
+          <button type="button" className={page === "search" ? "active" : ""} aria-current={page === "search" ? "page" : undefined} onClick={() => setPage("search")}>Find jobs</button>
+          <button type="button" className={page === "applications" ? "active" : ""} aria-current={page === "applications" ? "page" : undefined} onClick={() => setPage("applications")}>My Applications <span>{applicationApi.applications.length}</span></button>
+          <button type="button" className={page === "templates" ? "active" : ""} aria-current={page === "templates" ? "page" : undefined} onClick={() => setPage("templates")}>Message templates</button>
         </nav>
         {applicationApi.error && <p className="job-error" role="alert">{applicationApi.error}</p>}
 
@@ -487,7 +489,7 @@ export default function JobSearchMode({ onBack }: { onBack: () => void }) {
               <div className="job-empty-state"><span aria-hidden="true">✳</span><h2>A good next step starts with a search.</h2><p>Choose your skills and location, then search Google Jobs through SerpApi.</p></div>
             ) : null}
           </>
-        ) : (
+        ) : page === "applications" ? (
           <section className="applications-page">
             <div className="applications-toolbar">
               <label>Search applications<input value={applicationSearch} onChange={(event) => setApplicationSearch(event.target.value)} placeholder="Company, role, or note" /></label>
@@ -520,10 +522,10 @@ export default function JobSearchMode({ onBack }: { onBack: () => void }) {
               </div>
             ) : <div className="job-empty-state"><h2>No applications in this view.</h2><p>Save a role from search results, or adjust the status filter.</p></div>}
           </section>
-        )}
-        <aside className="job-disclaimer">Search results come from Google Jobs through SerpApi and may be incomplete or expired. Please verify the role and application details on the employer’s site. Search requests are cached by the backend for 45 minutes to reduce SerpApi quota usage.</aside>
+        ) : <MessageTemplateManager key={user?.id ?? "legacy"} userId={user?.id ?? "legacy"} />}
+        {page !== "templates" && <aside className="job-disclaimer">Search results come from Google Jobs through SerpApi and may be incomplete or expired. Please verify the role and application details on the employer’s site. Search requests are cached by the backend for 45 minutes to reduce SerpApi quota usage.</aside>}
       </section>
-      <footer className="page-footer"><span>Your search and application notes stay in this browser.</span><span>Verify listings before applying</span></footer>
+      <footer className="page-footer"><span>Your search, templates, and application notes stay in this browser.</span><span>Verify listings before applying</span></footer>
     </main>
   );
 }

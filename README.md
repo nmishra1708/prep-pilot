@@ -44,6 +44,8 @@ Saved searches/profile skill suggestions and application statuses, notes, and ap
 
 The Applications page filters by status and text, sorts by application date, and exports the current view as CSV. Result cards include a skill-match percentage and show a remembered applied badge when a saved job reappears in later searches.
 
+The **Message templates** page lets you add, edit, delete, and copy reusable LinkedIn messages, recruiter emails, thank-you notes, and custom formats. Starter examples can be edited or removed. Templates (including optional email subjects) are stored in this browser under the signed-in account; replace placeholders such as `{{name}}` and `{{role}}` before sending.
+
 ## Optional model evaluation
 
 Rubric-based local heuristics work without a model key. To enable the optional backend evaluator, set credentials in the backend process environment (never in browser code), then restart the backend:

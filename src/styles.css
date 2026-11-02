@@ -399,6 +399,32 @@ h1 em { color: var(--green); font-weight: 500; }
 .job-tabs button { padding: 11px 15px; border: 0; border-bottom: 2px solid transparent; color: #788580; background: transparent; font-size: 11px; }
 .job-tabs button.active { border-bottom-color: var(--green); color: var(--green-dark); font-weight: 700; }
 .job-tabs button span { margin-left: 5px; color: #74817b; font-family: "DM Mono", monospace; font-size: 9px; }
+.message-templates { padding: 18px; border: 1px solid #e6ebe8; border-radius: 11px; background: var(--paper); box-shadow: 0 8px 26px rgba(48, 69, 63, .04); }
+.message-templates-heading, .template-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.message-templates-heading { margin-bottom: 16px; }
+.message-templates-heading h2 { margin: 0; color: var(--ink); font-family: "Playfair Display", serif; font-size: 23px; font-weight: 500; }
+.message-templates-heading p { max-width: 700px; margin: 6px 0 0; color: var(--muted); font-size: 11px; line-height: 1.65; }
+.template-editor { margin-bottom: 16px; padding: 15px; border: 1px solid #dfe8e3; border-radius: 8px; background: #f8faf9; }
+.template-editor h3 { margin: 0 0 12px; color: var(--ink); font-size: 14px; }
+.template-editor-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.template-editor-fields label { display: grid; gap: 6px; color: #53625c; font-size: 10px; font-weight: 600; }
+.template-editor-fields label span { display: inline; color: #8a9690; font-weight: 400; }
+.template-editor-fields input, .template-editor-fields select, .template-editor-fields textarea { width: 100%; padding: 9px 10px; border: 1px solid #dfe6e2; border-radius: 6px; color: var(--ink); background: var(--paper); font: inherit; font-size: 11px; }
+.template-editor-fields input, .template-editor-fields select { min-height: 38px; }
+.template-editor-fields textarea { min-height: 150px; resize: vertical; line-height: 1.6; }
+.template-subject-field, .template-body-field { grid-column: 1 / -1; }
+.template-editor-actions, .template-card-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; }
+.template-editor-actions { margin-top: 12px; }
+.template-list { display: grid; gap: 10px; }
+.template-card { min-width: 0; padding: 14px; border: 1px solid #e6ebe8; border-radius: 8px; background: var(--paper); }
+.template-card-heading { align-items: center; }
+.template-card-heading h3 { margin: 5px 0 0; color: var(--ink); font-size: 14px; }
+.template-category { color: #4a745e; font-size: 9px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.template-card-actions .button { min-height: 32px; padding: 0 10px; font-size: 9px; }
+.template-delete { margin: 0 4px; color: #9a5149; }
+.template-subject { margin: 11px 0 0; color: #52635a; font-size: 10px; line-height: 1.5; }
+.template-body { margin: 10px 0 0; color: #68756f; font-size: 11px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+.template-status { margin: 0 0 12px; color: #28664d; font-size: 11px; }
 .job-search-form { padding: 18px; border: 1px solid #e6ebe8; border-radius: 11px; background: var(--paper); box-shadow: 0 8px 26px rgba(48, 69, 63, .04); }
 .job-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 18px; align-items: start; }
 .job-form-grid > label, .experience-inputs > label, .applications-toolbar > label { display: grid; gap: 7px; color: #53625c; font-size: 10px; font-weight: 600; }
@@ -497,6 +523,13 @@ h1 em { color: var(--green); font-weight: 500; }
 @media (prefers-color-scheme: dark) {
   .job-tabs { border-color: #394842; }
   .job-tabs button.active { color: #a5cbb7; }
+  .message-templates, .template-card { border-color: #354640; background: #1c2825; }
+  .template-editor { border-color: #394a43; background: #202e29; }
+  .template-editor-fields label { color: #d1ded7; }
+  .template-editor-fields input, .template-editor-fields select, .template-editor-fields textarea { border-color: #43544d; }
+  .template-card-heading h3, .message-templates-heading h2 { color: #d7e5dc; }
+  .template-category { color: #a5cbb7; }
+  .template-subject, .template-body { color: #acb9b2; }
   .job-search-form, .job-card, .job-detail-panel, .job-detail-placeholder, .applications-table-wrap { border-color: #354640; background: #1c2825; }
   .job-form-grid > label, .experience-inputs > label, .applications-toolbar > label, .skill-field legend, .application-status-label, .application-notes-label { color: #d1ded7; }
   .job-form-grid select, .job-form-grid input:not([type="checkbox"]), .applications-toolbar input, .applications-toolbar select, .applications-table select, .application-status-label select, .date-edit-label input, .application-notes-label textarea { border-color: #43544d; }
@@ -524,6 +557,9 @@ h1 em { color: var(--green); font-weight: 500; }
   .job-results-layout { grid-template-columns: 1fr; }
   .job-detail-panel, .job-detail-placeholder { position: static; max-height: none; }
   .job-form-grid { grid-template-columns: 1fr; }
+  .template-editor-fields { grid-template-columns: 1fr; }
+  .template-subject-field, .template-body-field { grid-column: auto; }
+  .message-templates-heading, .template-card-heading { align-items: flex-start; flex-direction: column; }
   .experience-inputs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .applications-toolbar { align-items: stretch; flex-direction: column; }
 }
